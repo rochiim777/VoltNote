@@ -962,7 +962,11 @@ const translations = {
         r2Explanation:"menunjukkan bahwa model regresi mampu menjelaskan",
         variationText: "variasi konsumsi listrik berdasarkan data yang tersedia.",
 
-         monthUnit: "kWh/bln"
+         monthUnit: "kWh/bln",
+
+        monthPlaceholderText: "Pilih Bulan",
+        kwhPlaceholder: "Contoh: 210",
+        costPlaceholder: "Contoh: 315000"
 
     },
 
@@ -1080,7 +1084,11 @@ const translations = {
         r2Explanation:"shows that the regression model can explain",
         variationText: "of the variation in electricity consumption based on the available data.",
 
-         monthUnit: "kWh/month"
+         monthUnit: "kWh/month",
+
+        monthPlaceholderText: "Select Month",
+        kwhPlaceholder: "Example: 210",
+        costPlaceholder: "Example: 315000"
         }
     };
 
@@ -1102,12 +1110,28 @@ function setLanguage(lang) {
 
     $('#monthInput').datepicker('destroy');
 
+    monthInput.value = "";
+    
+    monthInput.placeholder =
+        translations[lang].monthPlaceholderText;
+    
     $('#monthInput').datepicker({
         format: "MM yyyy",
         minViewMode: 1,
         autoclose: true,
         language: lang
     });
+
+    // Update placeholders
+
+        kwhInput.placeholder =
+            translations[lang].kwhPlaceholder;
+        
+        costInput.placeholder =
+            translations[lang].costPlaceholder;
+        
+        monthInput.placeholder =
+            translations[lang].monthPlaceholderText;
     
     render(); // tambahkan ini
 
