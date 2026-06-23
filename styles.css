@@ -663,3 +663,19 @@ table {
     border-radius: 12px;
     color: var(--text);
 }
+
+.month-picker-wrapper{
+    position: relative;
+}
+
+.month-picker-wrapper i{
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+}
+
+#monthInput{
+    padding-left: 45px !important;
+}
