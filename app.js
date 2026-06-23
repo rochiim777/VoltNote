@@ -440,6 +440,7 @@ function exportExcel() {
     );
 }
 function downloadPdf() {
+
     if (!data.length) {
         showToast(translations[currentLanguage].noPdfData);
         return;
@@ -447,31 +448,395 @@ function downloadPdf() {
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
+
     const calculations = calculateAll();
     const regression = calculations.regression;
 
+    const totalKwh = data.reduce((s, d) => s + d.kwh, 0);
+    const totalCost = data.reduce((s, d) => s + d.cost, 0);
+    const avgKwh = totalKwh / data.length;
 
-    doc.setFontSize(15);
-    doc.text(currentLanguage === "id"? "Laporan Konsumsi Listrik": "Electricity Consumption Report",14,18);
+    const prediction = calculations.prediction || 0;
+
+    const firstMonth = data[0]?.month || "-";
+    const lastMonth = data[data.length - 1]?.month || "-";
+
+    let y = 20;
+
+    // ==================================
+    // HEADER
+    // ==================================
+
+    doc.setFillColor(24, 119, 242);
+    doc.rect(0, 0, 210, 30, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont(undefined, "bold");
+    doc.text("⚡ VOLTNOTE", 14, 15);
+
+    doc.setFontSize(11);
+    doc.setFont(undefined, "normal");
+    doc.text(
+        "Laporan Analisis Konsumsi Listrik",
+        14,
+        23
+    );
+
+    doc.setTextColor(0, 0, 0);
+
+    y = 42;
+
     doc.setFontSize(10);
-    doc.text(currentLanguage === "id"? "Metode Interpolasi Linear dan Regresi Linear": "Linear Interpolation and Regression Method",14,26);
-    let y = 38;
-    data.forEach((item, index) => {
-        doc.text(`${index + 1}. ${item.month} - ${item.kwh} kWh - ${formatCurrency(item.cost)}`, 14, y);
-        y += 7;
-    });
+
+    doc.text(
+        `Periode Analisis : ${firstMonth} - ${lastMonth}`,
+        14,
+        y
+    );
 
     y += 6;
+
+    doc.text(
+        `Dibuat Pada : ${new Date().toLocaleString("id-ID")}`,
+        14,
+        y
+    );
+
+    // ==================================
+    // RINGKASAN
+    // ==================================
+
+    y += 10;
+
+    doc.setFillColor(245, 247, 250);
+    doc.roundedRect(14, y, 182, 38, 3, 3, "F");
+
+    doc.setFont(undefined, "bold");
+    doc.setFontSize(12);
+    doc.text("RINGKASAN ANALISIS", 20, y + 8);
+
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(10);
+
+    doc.text("Total Data", 20, y + 18);
+    doc.text(String(data.length), 65, y + 18);
+
+    doc.text("Rata-rata kWh", 20, y + 28);
+    doc.text(avgKwh.toFixed(2) + " kWh", 65, y + 28);
+
+    doc.text("Total Biaya", 110, y + 18);
+    doc.text(formatCurrency(totalCost), 145, y + 18);
+
+    doc.text("Prediksi", 110, y + 28);
+    doc.text(prediction.toFixed(2) + " kWh", 145, y + 28);
+
+    y += 55;
+
+    // ==================================
+    // INTERPOLASI
+    // ==================================
+
+    doc.setFont(undefined, "bold");
+    doc.setFontSize(14);
+    doc.text("Analisis Interpolasi Linear", 14, y);
+
+    y += 8;
+
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(10);
+
+    if (
+        calculations.interpolation &&
+        !calculations.interpolation.error
+    ) {
+
+        const i = calculations.interpolation;
+
+        doc.text(
+            `Nilai X Interpolasi : ${calculations.interpolationX}`,
+            14,
+            y
+        );
+
+        y += 6;
+
+        doc.text(
+            `Titik Referensi : (${i.x1}, ${i.y1}) dan (${i.x2}, ${i.y2})`,
+            14,
+            y
+        );
+
+        y += 6;
+
+        doc.text(
+            `Hasil Interpolasi : ${i.y.toFixed(2)} kWh`,
+            14,
+            y
+        );
+
+    } else {
+
+        doc.text(
+            "Data interpolasi belum tersedia.",
+            14,
+            y
+        );
+    }
+
+    // ==================================
+    // REGRESI
+    // ==================================
+
+    y += 15;
+
+    doc.setFont(undefined, "bold");
+    doc.setFontSize(14);
+    doc.text("Analisis Regresi Linear", 14, y);
+
+    y += 8;
+
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(10);
+
     if (regression) {
-        doc.text(`Persamaan regresi: y = ${regression.a.toFixed(4)} + ${regression.b.toFixed(4)}x`, 14, y);
-        y += 7;
-        doc.text(`R² = ${regression.r2.toFixed(4)}`, 14, y );
-        y += 10;
-        doc.text(`${currentLanguage === "id" ? `Prediksi bulan ke-${calculations.nextX}` : `Prediction for month ${calculations.nextX}` }: ${calculations.prediction.toFixed(2)} kWh`, 14, y );
+
+        doc.text(
+            `Persamaan : y = ${regression.a.toFixed(4)} + ${regression.b.toFixed(4)}x`,
+            14,
+            y
+        );
+
+        y += 6;
+
+        doc.text(
+            `Koefisien Determinasi (R²) : ${(regression.r2 * 100).toFixed(2)}%`,
+            14,
+            y
+        );
+
+        y += 6;
+
+        doc.text(
+            `Prediksi Bulan Ke-${calculations.nextX} : ${prediction.toFixed(2)} kWh`,
+            14,
+            y
+        );
+    }
+
+    // ==================================
+    // DATA KONSUMSI
+    // ==================================
+
+    y += 15;
+
+    doc.setFont(undefined, "bold");
+    doc.setFontSize(14);
+    doc.text("Data Konsumsi Listrik", 14, y);
+
+    y += 8;
+
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(10);
+
+    data.forEach((item, index) => {
+
+        doc.text(`${index + 1}`, 18, y);
+        doc.text(item.month, 30, y);
+        doc.text(item.kwh.toFixed(2) + " kWh", 90, y);
+        doc.text(formatCurrency(item.cost), 140, y);
+
+        y += 6;
+
+        if (y > 250) {
+            doc.addPage();
+            y = 20;
+        }
+
+    });
+
+    // ==================================
+    // GRAFIK
+    // ==================================
+
+    y += 12;
+
+    if (y > 150) {
+        doc.addPage();
+        y = 20;
+    }
+
+    doc.setFont(undefined, "bold");
+    doc.setFontSize(14);
+    doc.text("Grafik Dashboard", 14, y);
+
+    y += 8;
+
+    const chartCanvas =
+        document.getElementById("energyChart");
+
+    if (chartCanvas) {
+
+        const tempCanvas =
+            document.createElement("canvas");
+
+        tempCanvas.width =
+            chartCanvas.width;
+
+        tempCanvas.height =
+            chartCanvas.height;
+
+        const ctx =
+            tempCanvas.getContext("2d");
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(
+            0,
+            0,
+            tempCanvas.width,
+            tempCanvas.height
+        );
+
+        ctx.drawImage(
+            chartCanvas,
+            0,
+            0
+        );
+
+        const chartImage =
+            tempCanvas.toDataURL(
+                "image/png",
+                1.0
+            );
+
+        doc.addImage(
+            chartImage,
+            "PNG",
+            14,
+            y,
+            180,
+            90
+        );
+
+        y += 100;
+    }
+
+    // ==================================
+    // KESIMPULAN
+    // ==================================
+
+    if (y > 220) {
+        doc.addPage();
+        y = 20;
+    }
+
+    doc.setFont(undefined, "bold");
+    doc.setFontSize(14);
+    doc.text("Kesimpulan", 14, y);
+
+    y += 8;
+
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(10);
+
+    if (regression) {
+
+        const trend =
+            regression.b >= 0
+                ? "meningkat"
+                : "menurun";
+
+        doc.text(
+            `Konsumsi listrik menunjukkan tren ${trend}.`,
+            14,
+            y
+        );
+
+        y += 6;
+
+        doc.text(
+            `Model regresi menjelaskan ${(regression.r2 * 100).toFixed(2)}% variasi data.`,
+            14,
+            y
+        );
+
+        y += 6;
+
+        doc.text(
+            `Estimasi konsumsi bulan berikutnya adalah ${prediction.toFixed(2)} kWh.`,
+            14,
+            y
+        );
+    }
+
+    // ==================================
+    // REKOMENDASI
+    // ==================================
+
+    y += 15;
+
+    doc.setFont(undefined, "bold");
+    doc.setFontSize(14);
+    doc.text("Rekomendasi Otomatis", 14, y);
+
+    y += 8;
+
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(10);
+
+    doc.text(
+        "1. Pantau konsumsi listrik setiap bulan secara rutin.",
+        18,
+        y
+    );
+
+    y += 6;
+
+    doc.text(
+        "2. Gunakan hasil prediksi untuk perencanaan biaya listrik.",
+        18,
+        y
+    );
+
+    y += 6;
+
+    doc.text(
+        "3. Evaluasi penggunaan listrik jika tren terus meningkat.",
+        18,
+        y
+    );
+
+    // ==================================
+    // FOOTER
+    // ==================================
+
+    const pageCount =
+        doc.internal.getNumberOfPages();
+
+    for (let i = 1; i <= pageCount; i++) {
+
+        doc.setPage(i);
+
+        doc.setFillColor(24, 119, 242);
+        doc.rect(0, 285, 210, 12, "F");
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9);
+
+        doc.text(
+            `VoltNote • Interpolasi & Regresi Linear • Halaman ${i}/${pageCount}`,
+            14,
+            292
+        );
     }
 
     doc.save("laporan-konsumsi-listrik.pdf");
-    showToast(translations[currentLanguage].pdfCreated);
+
+    showToast(
+        currentLanguage === "id"
+            ? "PDF berhasil dibuat."
+            : "PDF generated successfully."
+    );
 }
 
 function showToast(message) {
