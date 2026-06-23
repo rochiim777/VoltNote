@@ -10,8 +10,13 @@ const toast = document.getElementById("toast");
 let energyChart;
 let data = [];
 
-function formatCurrency(value){
-    return "Rp" + Number(value).toLocaleString("id-ID");
+function formatCurrency(value) {
+
+    if (currentLanguage === "id") {
+        return "Rp" + Number(value).toLocaleString("id-ID");
+    }
+
+    return "IDR " + Number(value).toLocaleString("en-US");
 }
 
 let currentLanguage =localStorage.getItem("language") || "id";
@@ -190,7 +195,7 @@ function renderStats({ regression, prediction }) {
     document.getElementById("totalData").textContent = data.length;
     document.getElementById("avgKwh").textContent = `${avg.toFixed(1)} kWh`;
     document.getElementById("totalCost").textContent = formatCurrency(totalCost);
-    document.getElementById("trendValue").textContent = regression ? `${regression.b.toFixed(2)} kWh/bln` : "0";
+    document.getElementById("trendValue").textContent = regression ? `${regression.b.toFixed(2)} ${translations[currentLanguage].monthUnit}` : "0";
     document.getElementById("heroPrediction").textContent = `${prediction.toFixed(1)} kWh`;
 }
 
@@ -460,8 +465,9 @@ function downloadPdf() {
     if (regression) {
         doc.text(`Persamaan regresi: y = ${regression.a.toFixed(4)} + ${regression.b.toFixed(4)}x`, 14, y);
         y += 7;
-        doc.text(`R² = ${regression.r2.toFixed(4)}`,14,y);
-        doc.text(`Prediksi bulan ke-${calculations.nextX}: ${calculations.prediction.toFixed(2)} kWh`, 14, y);
+        doc.text(`R² = ${regression.r2.toFixed(4)}`, 14, y );
+        y += 10;
+        doc.text(`${currentLanguage === "id" ? `Prediksi bulan ke-${calculations.nextX}` : `Prediction for month ${calculations.nextX}` }: ${calculations.prediction.toFixed(2)} kWh`, 14, y );
     }
 
     doc.save("laporan-konsumsi-listrik.pdf");
@@ -591,6 +597,8 @@ const translations = {
         r2Explanation:"menunjukkan bahwa model regresi mampu menjelaskan",
         variationText: "variasi konsumsi listrik berdasarkan data yang tersedia.",
 
+         monthUnit: "kWh/bln"
+
     },
 
     en: {
@@ -706,6 +714,8 @@ const translations = {
 
         r2Explanation:"shows that the regression model can explain",
         variationText: "of the variation in electricity consumption based on the available data.",
+
+         monthUnit: "kWh/month"
         }
     };
 
