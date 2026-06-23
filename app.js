@@ -10,10 +10,9 @@ const toast = document.getElementById("toast");
 let energyChart;
 let data = [];
 
-const currency = new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR"
-});
+function formatCurrency(value){
+    return "Rp" + Number(value).toLocaleString("id-ID");
+}
 
 let currentLanguage =localStorage.getItem("language") || "id";
 
@@ -190,7 +189,7 @@ function renderStats({ regression, prediction }) {
 
     document.getElementById("totalData").textContent = data.length;
     document.getElementById("avgKwh").textContent = `${avg.toFixed(1)} kWh`;
-    document.getElementById("totalCost").textContent = currency.format(totalCost);
+    document.getElementById("totalCost").textContent = formatCurrency(totalCost);
     document.getElementById("trendValue").textContent = regression ? `${regression.b.toFixed(2)} kWh/bln` : "0";
     document.getElementById("heroPrediction").textContent = `${prediction.toFixed(1)} kWh`;
 }
@@ -211,7 +210,7 @@ function renderTable() {
             <td>${index + 1}</td>
             <td>${escapeHtml(item.month)}</td>
             <td>${item.kwh.toFixed(2)}</td>
-            <td>${currency.format(item.cost)}</td>
+            <td>${formatCurrency(item.cost)}</td>
             <td><button class="delete-btn" onclick="deleteRow(${index})" title="Hapus"><i class="fa-solid fa-trash"></i></button></td>
         </tr>
     `).join("");
@@ -228,9 +227,11 @@ function renderResult({ interpolation, interpolationX, regression, nextX, predic
         : `
             <div class="step">
                 <strong>${translations[currentLanguage].interpolationTitle}</strong>
-                Diketahui x = ${interpolationX}, titik terdekat adalah
-                (${interpolation.x1}, ${interpolation.y1}) dan (${interpolation.x2}, ${interpolation.y2}).<br>
-                y = ${interpolation.y1} + ((${interpolationX} - ${interpolation.x1}) / (${interpolation.x2} - ${interpolation.x1})) * (${interpolation.y2} - ${interpolation.y1})<br>
+                ${translations[currentLanguage].knownX} = ${interpolationX},
+                ${translations[currentLanguage].nearestPoint}
+                (${interpolation.x1}, ${interpolation.y1})
+                ${translations[currentLanguage].andWord}
+                (${interpolation.x2}, ${interpolation.y2})<br>
                 <strong>${translations[currentLanguage].interpolationResult} = ${interpolation.y.toFixed(2)} kWh</strong>
             </div>
         `;
@@ -247,11 +248,15 @@ function renderResult({ interpolation, interpolationX, regression, nextX, predic
                 <strong>a = ${regression.a.toFixed(4)}, b = ${regression.b.toFixed(4)}</strong><br>
                 ${translations[currentLanguage].equation}: <strong>y = ${regression.a.toFixed(4)} + ${regression.b.toFixed(4)}x</strong><br>
                 <br>R² = <strong>${regression.r2.toFixed(4)}</strong><br>
-                ${translations[currentLanguage].prediction}${nextX}: <strong>${prediction.toFixed(2)} kWh</strong>
+                ${translations[currentLanguage].prediction} ${nextX}: <strong>${prediction.toFixed(2)} kWh</strong>
             </div>
             <div class="step">
                 <strong>${translations[currentLanguage].conclusionTitle}</strong>
-                <br><br> R² = <strong>${(regression.r2 * 100).toFixed(2)}%</strong> menunjukkan bahwa model regresi mampu menjelaskan <strong>${(regression.r2 * 100).toFixed(2)}%</strong> variasi konsumsi listrik berdasarkan data yang tersedia.
+                <br><br> R² = <strong>${(regression.r2*100).toFixed(2)}%</strong> 
+                ${translations[currentLanguage].r2Explanation}
+                <strong>${(regression.r2*100).toFixed(2)}%</strong>
+                ${translations[currentLanguage].variationText}
+                
                 ${translations[currentLanguage].conclusionText} ${regression.b >= 0
                                                                   ? translations[currentLanguage].increase
                                                                   : translations[currentLanguage].decrease}
@@ -447,7 +452,7 @@ function downloadPdf() {
     doc.text(currentLanguage === "id"? "Metode Interpolasi Linear dan Regresi Linear": "Linear Interpolation and Regression Method",14,26);
     let y = 38;
     data.forEach((item, index) => {
-        doc.text(`${index + 1}. ${item.month} - ${item.kwh} kWh - ${currency.format(item.cost)}`, 14, y);
+        doc.text(`${index + 1}. ${item.month} - ${item.kwh} kWh - ${formatCurrency(item.cost)}`, 14, y);
         y += 7;
     });
 
@@ -578,7 +583,13 @@ const translations = {
         chartRegression: "Regresi & Prediksi",
         chartInterpolation: "Interpolasi",
 
-        predictionMonth: "Prediksi"
+        predictionMonth: "Prediksi",
+        knownX: "Diketahui x",
+        nearestPoint: "titik terdekat adalah",
+        andWord: "dan",
+
+        r2Explanation:"menunjukkan bahwa model regresi mampu menjelaskan",
+        variationText: "variasi konsumsi listrik berdasarkan data yang tersedia.",
 
     },
 
@@ -688,7 +699,13 @@ const translations = {
         chartRegression: "Regression & Prediction",
         chartInterpolation: "Interpolation",
 
-        predictionMonth: "Prediction"
+        predictionMonth: "Prediction",
+        knownX: "Given x",
+        nearestPoint: "nearest points are",
+        andWord: "and",
+
+        r2Explanation:"shows that the regression model can explain",
+        variationText: "of the variation in electricity consumption based on the available data.",
         }
     };
 
