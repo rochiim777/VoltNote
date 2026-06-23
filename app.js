@@ -356,12 +356,25 @@ function renderChart({ interpolation, interpolationX, regression, nextX, predict
     }
 
     energyChart.data.labels = extendedLabels;
+
     energyChart.data.datasets[0].data = actualSeries;
     energyChart.data.datasets[1].data = regressionSeries;
     energyChart.data.datasets[2].data = interpolationSeries;
+    
+    // UPDATE TERJEMAHAN LEGEND
+    energyChart.data.datasets[0].label =
+        translations[currentLanguage].chartActual;
+    
+    energyChart.data.datasets[1].label =
+        translations[currentLanguage].chartRegression;
+    
+    energyChart.data.datasets[2].label =
+        translations[currentLanguage].chartInterpolation;
+    
     energyChart.options.plugins.legend.labels.color = textColor;
     energyChart.options.scales.x.ticks.color = mutedColor;
     energyChart.options.scales.y.ticks.color = mutedColor;
+    
     energyChart.update("none");
 }
 
@@ -966,7 +979,11 @@ const translations = {
 
         monthPlaceholderText: "Pilih Bulan",
         kwhPlaceholder: "Contoh: 210",
-        costPlaceholder: "Contoh: 315000"
+        costPlaceholder: "Contoh: 315000",
+
+        tableMonth: "Bulan",
+        tableKwh: "kWh",
+        tableCost: "Biaya"
 
     },
 
@@ -1088,7 +1105,11 @@ const translations = {
 
         monthPlaceholderText: "Select Month",
         kwhPlaceholder: "Example: 210",
-        costPlaceholder: "Example: 315000"
+        costPlaceholder: "Example: 315000",
+
+        tableMonth: "Month",
+        tableKwh: "kWh",
+        tableCost: "Cost"
         }
     };
 
